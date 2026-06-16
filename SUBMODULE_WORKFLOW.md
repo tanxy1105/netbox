@@ -166,6 +166,21 @@ git submodule status
 
 ## 分支管理
 
+### 查看远程分支
+
+```powershell
+cd netbox
+
+# 查看所有远程分支（包括 upstream 和 gitlab）
+git branch -r
+
+# 只看 gitlab 远程分支
+git ls-remote --heads gitlab
+
+# 在 PowerShell 中过滤 gitlab 分支
+git branch -r | Select-String "gitlab"
+```
+
 ### 切换到其他官方分支
 
 ```powershell
@@ -211,6 +226,83 @@ git commit -m "更新 netbox：合并 upstream/main"
 ```
 
 > ⚠️ main 与 release 版本差异大，合并可能产生大量冲突。如只需某个功能，建议用 `git cherry-pick <commit-SHA>`。
+
+### Feature 分支工作流（推荐）
+
+通过创建 feature 分支开发，再合并到 `release-v4.6.2`，保持主分支稳定。
+
+```mermaid
+flowchart LR
+    A["release-v4.6.2"] --> B["创建 feature 分支"]
+    B --> C["在 feature 分支改代码"]
+    C --> D["推送 feature 分支"]
+    D --> E["GitLab 创建 Merge Request"]
+    E --> F["合并到 release-v4.6.2"]
+    F --> G["回外层锁定版本"]
+```
+
+**方式一：通过 GitLab Merge Request（推荐）**
+
+```powershell
+cd netbox
+
+# 1. 确保在 release-v4.6.2 且是最新
+git checkout release-v4.6.2
+git pull gitlab release-v4.6.2
+
+# 2. 基于 release-v4.6.2 创建 feature 分支
+git checkout -b feature/your-feature-name
+
+# 3. 修改代码...
+
+# 4. 提交并推送到 GitLab
+git add .
+git commit -m "描述你的修改"
+git push gitlab feature/your-feature-name
+
+# 5. 去 GitLab 网页创建 Merge Request
+#    source: feature/your-feature-name → target: release-v4.6.2
+
+# 6. MR 合并后，切回 release-v4.6.2 拉取最新
+git checkout release-v4.6.2
+git pull gitlab release-v4.6.2
+
+# 7. 删除本地 feature 分支（可选）
+git branch -d feature/your-feature-name
+
+# 8. 回外层锁定版本
+cd ..
+git add netbox
+git commit -m "更新 netbox 子模块：合并 feature/xxx"
+```
+
+**方式二：本地直接合并**
+
+```powershell
+cd netbox
+
+# 1. 创建并切换到 feature 分支
+git checkout -b feature/your-feature-name
+
+# 2. 修改代码并提交
+git add .
+git commit -m "描述你的修改"
+
+# 3. 切回 release-v4.6.2 并合并
+git checkout release-v4.6.2
+git merge feature/your-feature-name
+
+# 4. 推送到 GitLab
+git push gitlab release-v4.6.2
+
+# 5. 删除 feature 分支
+git branch -d feature/your-feature-name
+
+# 6. 回外层锁定版本
+cd ..
+git add netbox
+git commit -m "更新 netbox 子模块：合并 feature/xxx"
+```
 
 ---
 
