@@ -37,7 +37,7 @@ cd netbox
 # Step 3: 提交到你的 Fork
 git add .
 git commit -m "描述你的修改内容"
-git push origin main
+git push origin release-v4.6.2
 
 # Step 4: 回到外层仓库，锁定新版本
 cd ..
@@ -61,7 +61,7 @@ git merge upstream/main
 # Step 3: 如有冲突，手动解决后提交
 git add .
 git commit -m "合并上游更新"
-git push origin main
+git push origin release-v4.6.2
 
 # Step 4: 回外层锁定版本
 cd ..
@@ -116,13 +116,81 @@ git remote -v
 
 ---
 
+## 分支管理
+
+### 当前分支策略
+
+| 分支 | 来源 | 用途 |
+|------|------|------|
+| `main` | 跟踪 `upstream/main` | 官方开发主线 |
+| `release-v4.6.2` | 基于 `v4.6.2` tag 创建 | ★ 当前工作分支，存放自定义修改 |
+
+### 切换到其他官方分支
+
+```powershell
+cd netbox
+
+# 查看所有远程分支
+git branch -r
+
+# 基于官方某分支创建本地分支
+git checkout -b <本地分支名> upstream/<远程分支名>
+
+# 示例：基于官方 feature 分支创建
+git checkout -b feature upstream/feature
+```
+
+### 切换到其他 Release 版本
+
+```powershell
+cd netbox
+
+# 查看所有可用 tag
+git tag -l 'v4.*'
+
+# 基于 tag 创建分支
+git checkout v4.5.0
+git switch -c release-v4.5.0
+```
+
+### 将 main 代码合并到 release-v4.6.2
+
+```powershell
+cd netbox
+
+# 1. 确保在 release-v4.6.2 分支上
+git checkout release-v4.6.2
+
+# 2. 拉取官方 main 最新代码
+git fetch upstream
+
+# 3. 合并官方 main 到当前分支
+git merge upstream/main
+
+# 4. 如有冲突，手动解决后：
+git add .
+git commit -m "合并上游 main 到 release-v4.6.2"
+
+# 5. 推送到你的 Fork
+git push origin release-v4.6.2
+
+# 6. 回外层锁定版本
+cd ..
+git add netbox
+git commit -m "更新 netbox：合并 upstream/main 到 release-v4.6.2"
+```
+
+> ⚠️ **注意**：main 是持续开发的分支，与 release 版本差异较大，合并时可能产生大量冲突。如果只需要某个特定功能或修复，建议使用 `git cherry-pick <commit-SHA>` 挑选单个提交。
+
+---
+
 ## 常见问题
 
 ### Q: 忘记在外层 git add netbox 会怎样？
 A: 其他人拉取外层仓库后，子模块仍然指向旧版本 commit，看不到你的最新修改。
 
 ### Q: 合并上游时冲突怎么办？
-A: 手动解决冲突文件 → `git add .` → `git commit` → `git push origin main` → 回外层锁定版本。
+A: 手动解决冲突文件 → `git add .` → `git commit` → `git push origin release-v4.6.2` → 回外层锁定版本。
 
 ### Q: 如何回退子模块到某个历史版本？
 ```powershell
@@ -132,3 +200,6 @@ cd ..
 git add netbox
 git commit -m "回退 netbox 到指定版本"
 ```
+
+### Q: detached HEAD 是什么？
+A: 当直接 checkout 一个 tag（如 `git checkout v4.6.2`）时，HEAD 直接指向具体 commit 而非分支。此时修改代码并提交后，一切走就丢失。必须用 `git switch -c <分支名>` 创建分支来保留修改。
